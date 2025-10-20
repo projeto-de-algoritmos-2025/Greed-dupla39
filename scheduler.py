@@ -1,7 +1,8 @@
 """Scheduler simples para ordenar tarefas por prazo e calcular lateness.
 
 Este módulo contém:
-    prioridade e cliente).
+- Classe Task: representa uma tarefa com id, nome, duração, prazo, prioridade e cliente
+- Função schedule_minimize_lateness: implementa algoritmo EDF (Earliest Deadline First)
 
 Observação: `duration_hours` deve ser um float representando horas.
 """
@@ -26,40 +27,45 @@ class Task:
 
 
 def schedule_minimize_lateness(tasks: List[Task], start_time: datetime) -> Dict[str, Any]:
-    """
-    Ordena tarefas por prazo (earliest deadline first) e calcula horários de fim e lateness.
+    """Retorna cronograma e métricas de lateness.
 
-    Retorna dicionário com: ordered (lista com campos start/finish/lateness), total_lateness_hours e max_lateness_hours.
+    Saída (dict):
+    - 'ordered': lista de dicts com ('task','start','finish','lateness_hours')
+    - 'total_lateness_hours'
+    - 'max_lateness_hours'
     """
-    # ordenar por deadline
-    ordered = sorted(tasks, key=lambda t: t.deadline)
 
-    current = start_time
+    ordered_tasks = sorted(tasks, key=lambda t: t.deadline)
+
+    current_time = start_time
     results = []
     total_lateness = 0.0
     max_lateness = timedelta(0)
 
-    for t in ordered:
-        finish = current + timedelta(hours=t.duration_hours)
-        lateness_td = max(timedelta(0), finish - t.deadline)
+    for task in ordered_tasks:
+        finish_time = current_time + timedelta(hours=task.duration_hours)
+        lateness_td = max(timedelta(0), finish_time - task.deadline)
         lateness_hours = lateness_td.total_seconds() / 3600.0
+
         results.append({
-            'task': t,
-            'start': current,
-            'finish': finish,
+            'task': task,
+            'start': current_time,
+            'finish': finish_time,
             'lateness_hours': lateness_hours,
         })
+
         total_lateness += lateness_hours
         if lateness_td > max_lateness:
             max_lateness = lateness_td
 
-        current = finish
+        current_time = finish_time
 
     return {
         'ordered': results,
         'total_lateness_hours': total_lateness,
         'max_lateness_hours': max_lateness.total_seconds() / 3600.0,
     }
+
 
 
 def _parse_example_tasks() -> List[Task]:
