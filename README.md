@@ -114,5 +114,5 @@ Este projeto implementa um **Planejador de Prazos** utilizando o algoritmo **Ear
 - **`scheduler.py`**: Implementação do algoritmo EDF e classe Task
 
 ### Apresentação:
-[Link para o vídeo de apresentação]()
+[Link para o vídeo de apresentação](https://youtu.be/hNMXmCLPGGI)
 
