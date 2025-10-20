@@ -9,6 +9,7 @@ Este módulo contém:
 import streamlit as st
 from datetime import datetime, time
 import pandas as pd
+import plotly.express as px
 
 from scheduler import Task, schedule_minimize_lateness
 
@@ -231,6 +232,76 @@ if st.session_state['tasks']:
     
     schedule_df = pd.DataFrame(schedule_rows)
     st.table(schedule_df)
+    
+    # Gráfico Gantt
+    st.subheader('Gráfico Gantt')
+    
+    # Preparar dados para o gráfico Gantt
+    gantt_rows = []
+    for r in schedule_result['ordered']:
+        t = r['task']
+        gantt_rows.append({
+            'Task': t.name,
+            'Start': r['start'],
+            'Finish': r['finish'],
+            'Lateness (h)': round(r['lateness_hours'], 2),
+            'Priority': t.priority,
+            'Client': t.client,
+            'Deadline': t.deadline,
+        })
+    
+    gantt_df = pd.DataFrame(gantt_rows)
+    
+    # Definir cores baseadas no atraso (verde = no prazo, vermelho = atrasado)
+    gantt_df['Color'] = gantt_df['Lateness (h)'].apply(lambda x: 'red' if x > 0 else 'green')
+    
+    # Função para formatar prazo no hover
+    def format_deadline(val):
+        try:
+            return val.strftime('%d/%m/%Y %H:%M')
+        except Exception:
+            return str(val)
+    
+    # Criar labels customizados para hover
+    def make_label(r):
+        task = r.get('Task', '')
+        client = r.get('Client', '')
+        client_part = f" - {client}" if client else ""
+        deadline_str = format_deadline(r.get('Deadline'))
+        priority = r.get('Priority', '')
+        lateness = r.get('Lateness (h)', 0)
+        status = "ATRASADA" if lateness > 0 else "NO PRAZO"
+        return f"{task}{client_part}<br>Prazo: {deadline_str}<br>Prioridade: {priority}<br>Status: {status}"
+    
+    gantt_df['Label'] = gantt_df.apply(make_label, axis=1)
+    
+    # Criar gráfico Gantt com Plotly
+    fig = px.timeline(
+        gantt_df, 
+        x_start='Start', 
+        x_end='Finish', 
+        y='Task', 
+        color='Color',
+        color_discrete_map={'green': '#28a745', 'red': '#dc3545'},
+        title='Cronograma de Execução das Tarefas'
+    )
+    
+    # Customizar hover
+    fig.update_traces(
+        hovertemplate='%{customdata[0]}<extra></extra>',
+        customdata=gantt_df[['Label']].values
+    )
+    
+    # Ajustar layout
+    fig.update_yaxes(autorange='reversed')  # Primeira tarefa no topo
+    fig.update_layout(
+        height=max(400, len(gantt_df) * 50),  # Altura dinâmica baseada no número de tarefas
+        showlegend=False,
+        xaxis_title="Tempo",
+        yaxis_title="Tarefas"
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
     
 else:
     st.info('Adicione tarefas para gerar um cronograma otimizado.')
