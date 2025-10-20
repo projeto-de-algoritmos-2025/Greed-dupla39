@@ -10,6 +10,7 @@ import streamlit as st
 from datetime import datetime, time
 import pandas as pd
 import plotly.express as px
+import random
 
 from scheduler import Task, schedule_minimize_lateness
 
@@ -43,13 +44,13 @@ def new_task_form():
     para horas (float) para armazenamento em `st.session_state['tasks']`.
     """
     st.sidebar.header('Cadastrar nova tarefa')
-    name = st.sidebar.text_input('Nome da tarefa')
-    duration_time = st.sidebar.time_input('Duração (HH:MM)', value=time(2, 0))
-    dl_date = st.sidebar.date_input('Prazo (data)', value=datetime.now().date())
-    dl_time = st.sidebar.time_input('Prazo (hora)', value=datetime.now().time())
+    name = st.sidebar.text_input('Nome da tarefa', key='new_task_name')
+    duration_time = st.sidebar.time_input('Duração (HH:MM)', value=time(2, 0), key='new_task_duration')
+    dl_date = st.sidebar.date_input('Prazo (data)', value=datetime.now().date(), key='new_task_date')
+    dl_time = st.sidebar.time_input('Prazo (hora)', value=datetime.now().time(), key='new_task_time')
     deadline = datetime.combine(dl_date, dl_time)
-    client = st.sidebar.text_input('Cliente (opcional)')
-    priority = st.sidebar.selectbox('Prioridade', ['alta', 'média', 'baixa'])
+    client = st.sidebar.text_input('Cliente (opcional)', key='new_task_client')
+    priority = st.sidebar.selectbox('Prioridade', ['alta', 'média', 'baixa'], key='new_task_priority')
     
     if st.sidebar.button('Adicionar tarefa'):
         tasks = st.session_state.get('tasks', [])
@@ -302,6 +303,76 @@ if st.session_state['tasks']:
     )
     
     st.plotly_chart(fig, use_container_width=True)
+    
+    # Comparação com ordem aleatória
+    with st.expander('**Análise de eficiência do algoritmo EDF (Earliest Deadline First)**'):
+        st.write("**A análise é feita a partir da comparação dos resultados da ordenação ótima (EDF) com uma ordenação aleatória das mesmas tarefas.**")
+        
+        # Gerar cronograma com ordem aleatória
+        shuffled_tasks = tasks.copy()
+        random.shuffle(shuffled_tasks)
+        random_schedule = schedule_minimize_lateness(shuffled_tasks, start_time)
+        
+        # Comparar métricas
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric(
+                label="Ordem Ótima (EDF)",
+                value=f"{schedule_result['total_lateness_hours']:.2f}h",
+                help="Atraso total usando algoritmo EDF"
+            )
+        
+        with col2:
+            st.metric(
+                label="Ordem Aleatória", 
+                value=f"{random_schedule['total_lateness_hours']:.2f}h",
+                help="Atraso total com ordem aleatória das tarefas"
+            )
+        
+        improvement = random_schedule['total_lateness_hours'] - schedule_result['total_lateness_hours']
+        improvement_pct = (improvement / max(random_schedule['total_lateness_hours'], 0.001)) * 100
+        
+        with col3:
+            st.metric(
+                label="Melhoria do EDF",
+                value=f"{improvement:.2f}h",
+                delta=f"{improvement_pct:.1f}% melhor",
+                help="Redução no atraso total comparado à ordem aleatória"
+            )
+        
+        # Mostrar comparação detalhada
+        st.write("**Comparação detalhada:**")
+        
+        comparison_data = {
+            'Métrica': [
+                'Atraso Total (horas)',
+                'Atraso Máximo (horas)', 
+                'Número de Tarefas Atrasadas'
+            ],
+            'EDF (Ótimo)': [
+                f"{schedule_result['total_lateness_hours']:.2f}",
+                f"{schedule_result['max_lateness_hours']:.2f}",
+                str(len([r for r in schedule_result['ordered'] if r['lateness_hours'] > 0]))
+            ],
+            'Aleatório': [
+                f"{random_schedule['total_lateness_hours']:.2f}",
+                f"{random_schedule['max_lateness_hours']:.2f}",
+                str(len([r for r in random_schedule['ordered'] if r['lateness_hours'] > 0]))
+            ]
+        }
+        
+        comparison_df = pd.DataFrame(comparison_data)
+        st.table(comparison_df)
+        
+        # Conclusão
+        if improvement > 0:
+            st.success(f"**O algoritmo EDF reduziu o atraso total em {improvement:.2f} horas ({improvement_pct:.1f}%)!**")
+        elif improvement == 0:
+            st.info("Ambas as ordens resultaram no mesmo atraso total.")
+        else:
+            st.warning("Neste caso específico, a ordem aleatória teve melhor resultado (pouco provável).")
+        
     
 else:
     st.info('Adicione tarefas para gerar um cronograma otimizado.')
