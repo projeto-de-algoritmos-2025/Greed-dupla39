@@ -26,15 +26,15 @@ Este projeto implementa um **Planejador de Prazos** utilizando o algoritmo **Ear
 
 <p align="center"><b>Imagem 1: Visão inicial da Agenda de planejamento de prazos</b></p>
 
-![pagina inicial](assets/pagina-inicial.png)
+![pagina inicial](../assets/pagina-inicial.png)
 
 <p align="center"><b>Imagem 2: Execução do algoritmo de agendamento com tarefas destacadas.</b></p>
 
-![agenda](assets/agenda.png)
+![agenda](../assets/agenda.png)
 
 <p align="center"><b>Imagem 3: Análise da eficiência do algoritmo.</b></p>
 
-![analise](assets/analise.png)
+![analise](../assets/analise.png)
 
 ## Instalação 
 **Linguagem**: Python<br>
