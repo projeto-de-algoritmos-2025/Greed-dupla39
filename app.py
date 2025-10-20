@@ -13,6 +13,15 @@ import pandas as pd
 from scheduler import Task, schedule_minimize_lateness
 
 
+def safe_rerun():
+    """Função auxiliar para reexecutar o Streamlit de forma segura."""
+    try:
+        if hasattr(st, 'rerun'):
+            st.rerun()
+    except Exception:
+        return
+
+
 st.set_page_config(page_title='Planejador de Prazos', layout='wide')
 
 st.title('Planejador de Prazos')
@@ -107,5 +116,63 @@ if not tasks_df.empty:
         'client': 'Cliente',
     })
     st.table(display_df)
+    
+    # Editor inline de tarefas
+    with st.expander('Editar / Remover tarefas'):
+        for idx, row in tasks_df.iterrows():
+            cols = st.columns([2, 1, 1, 1, 1])
+            name = cols[0].text_input(label=f"Tarefa {row['id']}", value=row['name'], key=f"nome_{row['id']}")
+            
+            # Converter duração de float para time para o time_input
+            try:
+                dh = float(row.get('duration_hours', 0.0))
+                dh_hours = int(dh)
+                dh_minutes = int(round((dh - dh_hours) * 60))
+                default_dur_time = time(dh_hours % 24, dh_minutes)
+            except Exception:
+                default_dur_time = time(2, 0)
+            
+            dur_time = cols[1].time_input(label=f"Duração {row['id']}", value=default_dur_time, key=f"dur_{row['id']}")
+            
+            # Converter deadline para date e time separados
+            try:
+                existing_deadline = row['deadline']
+                dl_date_val = existing_deadline.date()
+                dl_time_val = existing_deadline.time()
+            except Exception:
+                dl_date_val = datetime.now().date()
+                dl_time_val = datetime.now().time()
+            
+            dl_date = cols[2].date_input(label=f"Prazo (Data) {row['id']}", value=dl_date_val, key=f"dl_date_{row['id']}")
+            dl_time = cols[2].time_input(label=f"Prazo (Hora) {row['id']}", value=dl_time_val, key=f"dl_time_{row['id']}")
+            dl = datetime.combine(dl_date, dl_time)
+            
+            pr = cols[3].selectbox(label=f"Prioridade {row['id']}", options=['alta','média','baixa'], 
+                                 index=['alta','média','baixa'].index(row['priority']), key=f"pr_{row['id']}")
+            client_val = cols[0].text_input(label=f"Cliente {row['id']}", value=row.get('client',''), key=f"client_{row['id']}")
+            
+            # Botões de ação
+            if cols[4].button('Salvar', key=f'save_{row["id"]}'):
+                tasks = st.session_state['tasks']
+                for t in tasks:
+                    if t['id'] == row['id']:
+                        t['name'] = name
+                        try:
+                            dt = dur_time
+                            dur_hours = dt.hour + dt.minute / 60.0 + dt.second / 3600.0
+                        except Exception:
+                            dur_hours = float(row.get('duration_hours', 0.0))
+                        t['duration_hours'] = dur_hours
+                        t['deadline'] = dl
+                        t['priority'] = pr
+                        t['client'] = client_val
+                st.session_state['tasks'] = tasks
+                st.success(f'Tarefa "{name}" salva!')
+                safe_rerun()
+            
+            if cols[4].button('Remover', key=f'del_{row["id"]}'):
+                st.session_state['tasks'] = [t for t in st.session_state['tasks'] if t['id'] != row['id']]
+                st.success(f'Tarefa "{row["name"]}" removida!')
+                safe_rerun()
 else:
     st.info('Nenhuma tarefa cadastrada. Use o formulário lateral para adicionar.')
