@@ -176,3 +176,62 @@ if not tasks_df.empty:
                 safe_rerun()
 else:
     st.info('Nenhuma tarefa cadastrada. Use o formulário lateral para adicionar.')
+
+# Seção de cronograma EDF
+st.header('Agenda otimizada (Earliest Deadline First)')
+
+# Configuração de horário de início
+col1, col2 = st.columns(2)
+with col1:
+    st_date = st.date_input('Início (data)', value=datetime.now().date())
+with col2:
+    st_time = st.time_input('Início (hora)', value=datetime.now().time())
+
+start_time = datetime.combine(st_date, st_time)
+
+# Construir objetos Task e gerar cronograma
+if st.session_state['tasks']:
+    tasks = []
+    for t in st.session_state['tasks']:
+        task = Task(
+            id=t['id'], 
+            name=t['name'], 
+            duration_hours=float(t['duration_hours']), 
+            deadline=t['deadline'], 
+            priority=t.get('priority','média'), 
+            client=t.get('client','')
+        )
+        tasks.append(task)
+    
+    # Gerar cronograma usando EDF
+    schedule_result = schedule_minimize_lateness(tasks, start_time)
+    
+    # Exibir métricas
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric('Atraso total (h)', f"{schedule_result['total_lateness_hours']:.2f}")
+    with col2:
+        st.metric('Atraso máximo (h)', f"{schedule_result['max_lateness_hours']:.2f}")
+    
+    # Exibir cronograma em tabela
+    st.subheader('Cronograma de execução')
+    schedule_rows = []
+    for r in schedule_result['ordered']:
+        t = r['task']
+        schedule_rows.append({
+            'Tarefa': t.name,
+            'Cliente': t.client,
+            'Início': r['start'].strftime('%d/%m/%Y %H:%M'),
+            'Fim': r['finish'].strftime('%d/%m/%Y %H:%M'),
+            'Duração': f"{t.duration_hours:.2f}h",
+            'Prazo': t.deadline.strftime('%d/%m/%Y %H:%M'),
+            'Atraso (h)': f"{r['lateness_hours']:.2f}",
+            'Prioridade': t.priority
+        })
+    
+    schedule_df = pd.DataFrame(schedule_rows)
+    st.table(schedule_df)
+    
+else:
+    st.info('Adicione tarefas para gerar um cronograma otimizado.')
+
