@@ -48,8 +48,8 @@ Este projeto implementa um **Planejador de Prazos** utilizando o algoritmo **Ear
 
 1. **Clone o repositório:**
    ```bash
-   git clone https://github.com/projeto-de-algoritmos-2025/Greed-dupla39.git
-   cd Greed-dupla39
+   git clone https://github.com/projeto-de-algoritmos-2025/Greedy-prazos.git
+   cd Greedy-prazos
    ```
 
 2. **Crie um ambiente virtual (recomendado):**
@@ -72,6 +72,7 @@ Este projeto implementa um **Planejador de Prazos** utilizando o algoritmo **Ear
 
 5. **Acesse no navegador:**
    - Abra o link exibido no terminal (geralmente `http://localhost:8501`)
+   - Ou acesse diretamente: [https://greedy-planejador-prazos.streamlit.app/](https://greedy-planejador-prazos.streamlit.app/)
 
 
 ## Uso 
