@@ -1,6 +1,6 @@
 # Planejador de Prazos - Earliest Deadline First (EDF)
 
-**Conteúdo da Disciplina**: Grafos 1<br>
+**Conteúdo da Disciplina**: Greedy<br>
 **Dupla**: 39
 
 ## Alunos
